@@ -16,12 +16,11 @@ This project is the backend for a real-time cryptocurrency dashboard, built with
    npm install
    ```
 
-2. Create a `.env` file:
+2. Run redis and postgres:
 
-   ```
-   REDIS_HOST=127.0.0.1
-   REDIS_PORT=6379
-   ```
+```bash
+docker compose up
+```
 
 3. Start the development server:
    ```bash
@@ -30,14 +29,8 @@ This project is the backend for a real-time cryptocurrency dashboard, built with
 
 ## Project Structure
 
-```
-backend/
-├── src/
-│   ├── common/          # Utilities and shared modules
-│   ├── modules/         # Feature-specific modules
-│   ├── main.ts          # Entry point
-├── .env                 # Environment variables
-├── .gitignore           # Ignored files for Git
-├── package.json         # Dependencies and scripts
-└── README.md            # Project documentation
-```
+- `binance.utils.ts` handles interactions between Binance API and the backend service including ticker streams
+- prisma ORM to interact with the PostgreSQL tables, to save users and their subscriptions
+- User modules to handle requests regarding user creation, login, subscribing (DB calls and persisting)
+- Socket io to handle multiple clients and serve them data accordingly
+- App subscribes to all 100 symbols, serves the ones users are subscribed to, or whoever joins the details room for that symbol.

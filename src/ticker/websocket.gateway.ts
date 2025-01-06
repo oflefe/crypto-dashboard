@@ -1,35 +1,71 @@
 import {
   WebSocketGateway,
   WebSocketServer,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  OnGatewayInit,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
+import { PrismaService } from 'src/prisma/prisma.service';
 
-@WebSocketGateway()
+@WebSocketGateway({
+  cors: {
+    origin: '*', // Replace with frontend URL in production
+  },
+})
 export class WebSocket
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  private server: Server;
 
-  private readonly logger = new Logger(WebSocketGateway.name);
+  constructor(private readonly prisma: PrismaService) {}
 
-  afterInit(server: Server) {
-    this.logger.log('WebSocket Gateway initialized');
+  afterInit() {
+    console.log('WebSocket Gateway initialized');
   }
 
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+  handleConnection(client: any) {
+    console.log(`Client connected: ${client.id}`);
+
+    client.on('identify', async (userId: number) => {
+      console.log(`Identifying client ${client.id} as user ${userId}`);
+
+      const subscriptions = await this.prisma.subscription.findMany({
+        where: { userId },
+        select: { symbol: true },
+      });
+
+      subscriptions.forEach(({ symbol }) => {
+        const roomName = `symbol-${symbol}`;
+        client.join(roomName);
+        console.log(`Client ${client.id} joined room ${roomName}`);
+      });
+    });
+
+    client.on('joinSymbolDetails', (symbol: string) => {
+      this.joinSymbolDetailsRoom(client, symbol);
+    });
   }
 
-  handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+  handleDisconnect(client: any) {
+    console.log(`Client disconnected: ${client.id}`);
   }
 
-  sendTickerUpdate(data: any) {
-    this.server.emit('tickerUpdate', data);
+  broadcast(event: string, data: any) {
+    this.server.emit(event, data);
+  }
+
+  broadcastSubscribedUsers(symbol: string, price: string) {
+    this.server.to(`symbol-${symbol}`).emit('userUpdate', { symbol, price });
+  }
+
+  joinSymbolDetailsRoom(client: any, symbol: string) {
+    client.join(`details-${symbol}`);
+    console.log(`Client ${client.id} joined room details-${symbol}`);
+  }
+
+  broadcastSymbolDetails(symbol: string, details: any) {
+    this.server.to(`details-${symbol}`).emit('symbolDetailsUpdate', details);
   }
 }

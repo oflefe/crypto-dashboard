@@ -1,75 +1,59 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { WebSocket } from './websocket.gateway';
 import { BinanceWebSocket } from '../common/utils/binance.utils';
-import { SubscriptionService } from '../subscription/subscription.service';
 import axios from 'axios';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TickerService implements OnModuleInit, OnModuleDestroy {
-  private binanceWebSocket: BinanceWebSocket | null = null;
-  private readonly binanceApiUrl: string;
+  private binanceWebSocket: BinanceWebSocket;
 
-  constructor(
-    private readonly websocket: WebSocket,
-    private readonly subscriptionService: SubscriptionService,
-    private readonly configService: ConfigService,
-  ) {
-    this.binanceApiUrl = this.configService.get<string>('BINANCE_API_BASE_URL');
+  constructor(private readonly websocket: WebSocket) {
+    this.binanceWebSocket = new BinanceWebSocket();
   }
 
   async onModuleInit() {
-    this.binanceWebSocket = new BinanceWebSocket();
-    await this.binanceWebSocket.connect((data) => {
-      this.handleTickerData(data.data);
-    });
+    // Fetch 100 symbols and start tracking
+    const symbols = await this.fetchTopSymbols();
+    this.binanceWebSocket.updateTrackedSymbols(
+      symbols.map((symbol) => symbol.symbol),
+    );
+
+    // Handle real-time updates from Binance
+    this.binanceWebSocket.connect((data) => this.handleTickerData(data));
   }
 
-  onModuleDestroy() {
-    this.binanceWebSocket?.disconnect();
+  async onModuleDestroy() {
+    this.binanceWebSocket.disconnect();
   }
 
-  async subscribeUser(userId: string, pair: string) {
-    await this.subscriptionService.addUserSubscription(userId, pair);
-    this.binanceWebSocket?.addPair(pair);
-  }
-
-  async unsubscribeUser(userId: string, pair: string) {
-    await this.subscriptionService.removeUserSubscription(userId, pair);
-    this.binanceWebSocket?.removePair(pair);
+  async fetchTopSymbols(): Promise<{ symbol: string; price: number }[]> {
+    const response = await axios.get(
+      'https://api.binance.com/api/v3/ticker/price',
+    );
+    return response.data
+      .slice(0, 100)
+      .map((ticker: any) => ({ symbol: ticker.symbol, price: ticker.price }));
   }
 
   private handleTickerData(data: any) {
-    const processedData = {
-      symbol: data.s,
-      price: data.c,
-      high: data.h,
-      low: data.l,
-      change: data.p,
-      percentChange: data.P,
+    const {
+      s: symbol,
+      c: price,
+      h: highPrice,
+      l: lowPrice,
+      p: priceChange,
+      P: percentChange,
+    } = data;
+    this.websocket.broadcast('homepage', { symbol, price });
+    this.websocket.broadcastSubscribedUsers(symbol, price);
+    this.websocket.broadcastSymbolDetails(symbol, {
+      symbol,
+      price,
+      high: highPrice,
+      low: lowPrice,
+      priceChange,
+      percentChange,
       timestamp: Date.now(),
-    };
-    this.websocket.sendTickerUpdate(processedData);
-  }
-
-  async getTopTradingPairs(): Promise<any[]> {
-    const response = await axios.get(`${this.binanceApiUrl}/ticker/price`);
-    return response.data.slice(0, 100).map((ticker: any) => ({
-      symbol: ticker.symbol,
-      price: ticker.price,
-    }));
-  }
-
-  async getPairDetails(pair: string): Promise<any> {
-    const response = await axios.get(
-      `${this.binanceApiUrl}/ticker/24hr?symbol=${pair}`,
-    );
-    return {
-      symbol: response.data.symbol,
-      highPrice: response.data.highPrice,
-      lowPrice: response.data.lowPrice,
-      priceChange: response.data.priceChange,
-      priceChangePercent: response.data.priceChangePercent,
-    };
+    });
   }
 }
