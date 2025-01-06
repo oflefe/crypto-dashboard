@@ -18,9 +18,11 @@ export class TickerService implements OnModuleInit, OnModuleDestroy {
     this.binanceApiUrl = this.configService.get<string>('BINANCE_API_BASE_URL');
   }
 
-  onModuleInit() {
+  async onModuleInit() {
     this.binanceWebSocket = new BinanceWebSocket();
-    this.binanceWebSocket.connect((data) => this.handleTickerData(data));
+    await this.binanceWebSocket.connect((data) => {
+     this.handleTickerData(data.data);
+    });
   }
 
   onModuleDestroy() {
@@ -37,7 +39,7 @@ export class TickerService implements OnModuleInit, OnModuleDestroy {
     this.binanceWebSocket?.removePair(pair);
   }
 
-  private async handleTickerData(data: any) {
+  private handleTickerData(data: any) {
     const processedData = {
       symbol: data.s,
       price: data.c,
@@ -47,13 +49,7 @@ export class TickerService implements OnModuleInit, OnModuleDestroy {
       percentChange: data.P,
       timestamp: Date.now(),
     };
-
-    const userIds = await this.subscriptionService.getUsersSubscribedToPair(
-      processedData.symbol,
-    );
-    userIds.forEach((userId) => {
-      this.websocket.sendTickerUpdate({ userId, ...processedData });
-    });
+    console.log('message received', processedData);
     this.websocket.sendTickerUpdate(processedData);
   }
 
