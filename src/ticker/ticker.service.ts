@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { WebSocket } from './websocket.gateway';
-import { BinanceWebSocket } from '../../common/utils/binance.utils';
-import { SubscriptionService } from '../../subscription/subscription.service';
+import { BinanceWebSocket } from '../common/utils/binance.utils';
+import { SubscriptionService } from '../subscription/subscription.service';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 

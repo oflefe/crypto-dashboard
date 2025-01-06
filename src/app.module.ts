@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TickerModule } from './modules/ticker/ticker.module';
+import { TickerModule } from './ticker/ticker.module';
 import { RedisModule } from './common/redis.module';
 import { PrismaModule } from './prisma/prisma.module';
 
