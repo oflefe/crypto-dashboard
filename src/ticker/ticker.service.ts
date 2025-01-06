@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { WebSocket } from './websocket.gateway';
 import { BinanceWebSocket } from '../../common/utils/binance.utils';
-import { SubscriptionService } from '../subscription/subscription.service';
+import { SubscriptionService } from '../../subscription/subscription.service';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 
@@ -21,7 +21,7 @@ export class TickerService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     this.binanceWebSocket = new BinanceWebSocket();
     await this.binanceWebSocket.connect((data) => {
-     this.handleTickerData(data.data);
+      this.handleTickerData(data.data);
     });
   }
 
@@ -49,16 +49,14 @@ export class TickerService implements OnModuleInit, OnModuleDestroy {
       percentChange: data.P,
       timestamp: Date.now(),
     };
-    console.log('message received', processedData);
     this.websocket.sendTickerUpdate(processedData);
   }
 
   async getTopTradingPairs(): Promise<any[]> {
-    const response = await axios.get(`${this.binanceApiUrl}/ticker/24hr`);
+    const response = await axios.get(`${this.binanceApiUrl}/ticker/price`);
     return response.data.slice(0, 100).map((ticker: any) => ({
       symbol: ticker.symbol,
-      priceChange: ticker.priceChange,
-      priceChangePercent: ticker.priceChangePercent,
+      price: ticker.price,
     }));
   }
 

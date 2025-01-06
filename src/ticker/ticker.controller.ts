@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { TickerService } from './ticker.service';
-import { SubscriptionService } from '../subscription/subscription.service';
+import { SubscriptionService } from '../../subscription/subscription.service';
 
 @Controller('ticker')
 export class TickerController {

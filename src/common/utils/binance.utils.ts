@@ -31,7 +31,7 @@ export class BinanceWebSocket {
       this.reconnectAttempts = 0; // Reset on successful connection
     });
 
-    this.ws.on('message', (message) => { 
+    this.ws.on('message', (message) => {
       const parsedMessage = JSON.parse(message.toString());
       onMessage(parsedMessage);
     });
@@ -67,14 +67,14 @@ export class BinanceWebSocket {
 
   private formatTickerData(data: any) {
     return {
-      symbol: data.s,                // Symbol
-      price: data.c,                 // Last price
-      change: data.p,                // Price change
-      percentChange: data.P,         // Price change percent
-      high: data.h,                  // High price
-      low: data.l,                   // Low price
-      volume: data.v,                // Total traded base asset volume
-      timestamp: data.E,             // Event time
+      symbol: data.s, // Symbol
+      price: data.c, // Last price
+      change: data.p, // Price change
+      percentChange: data.P, // Price change percent
+      high: data.h, // High price
+      low: data.l, // Low price
+      volume: data.v, // Total traded base asset volume
+      timestamp: data.E, // Event time
     };
   }
 
