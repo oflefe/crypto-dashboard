@@ -1,4 +1,5 @@
-import WebSocket from 'ws';
+import { WebSocket } from "ws";
+
 
 export class BinanceWebSocket {
   private ws: WebSocket | null = null;

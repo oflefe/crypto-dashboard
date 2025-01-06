@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - '6379:6379'
+    command: ['redis-server']
+    restart: always
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
+    driver: local
